@@ -1,8 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:mg_routes/screens/delivery_info.dart';
 import 'package:mg_routes/utils/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class AuthenticationScreen extends StatelessWidget {
+import '../api/api.dart';
+
+class AuthenticationScreen extends StatefulWidget {
   const AuthenticationScreen({super.key});
+
+  @override
+  State<AuthenticationScreen> createState() => _AuthenticationScreenState();
+}
+
+class _AuthenticationScreenState extends State<AuthenticationScreen> {
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login(
+      BuildContext context, String email, String password) async {
+    print(email + password);
+    try {
+      final response = await ApiService.post(
+          context, "users/signin", {"email": email, "password": password});
+      if (response['success'] == true) {
+        final String token = response['result']['token'];
+        final String driverName = response['result']['user']['username'];
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString('token', token);
+        prefs.setString('driver', driverName);
+
+        // Navigate to the next screen
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => DeliveryInfo()));
+      }
+    } catch (e) {
+      // Handle network errors
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${e}'),
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +106,7 @@ class AuthenticationScreen extends StatelessWidget {
                               fontWeight: FontWeight.w500),
                         ),
                         TextField(
+                          controller: emailController,
                           decoration: InputDecoration(
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(7),
@@ -98,6 +143,8 @@ class AuthenticationScreen extends StatelessWidget {
                               fontWeight: FontWeight.w500),
                         ),
                         TextField(
+                          controller: passwordController,
+                          obscureText: true,
                           decoration: InputDecoration(
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(7),
@@ -146,7 +193,8 @@ class AuthenticationScreen extends StatelessWidget {
                         gradient: linearGradient),
                     child: ElevatedButton(
                       onPressed: () {
-                        // Add your button click logic here
+                        _login(context, emailController.text,
+                            passwordController.text);
                       },
                       style: ElevatedButton.styleFrom(
                         primary: Colors.transparent,
