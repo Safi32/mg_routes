@@ -2,10 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mg_routes/api/api.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class QRViewExample extends StatefulWidget {
-  const QRViewExample({Key? key}) : super(key: key);
+  const QRViewExample(
+      {Key? key, required this.orderNum, required this.trackingNum})
+      : super(key: key);
+  final String orderNum;
+  final String trackingNum;
 
   @override
   State<StatefulWidget> createState() => _QRViewExampleState();
@@ -26,6 +31,13 @@ class _QRViewExampleState extends State<QRViewExample> {
     } else if (Platform.isIOS) {
       controller!.resumeCamera();
     }
+  }
+
+  void callQRScan() {
+    try {
+      ApiService.get(context, result!.code.toString());
+      Navigator.of(context).pop();
+    } catch (c) {}
   }
 
   @override
@@ -60,6 +72,7 @@ class _QRViewExampleState extends State<QRViewExample> {
       setState(() {
         result = scanData;
       });
+      callQRScan();
     });
   }
 

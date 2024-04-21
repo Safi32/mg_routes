@@ -498,7 +498,13 @@ class _DeliveryInfoState extends State<DeliveryInfo> {
                                               Navigator.of(context).push(
                                                   MaterialPageRoute(
                                                       builder: (context) =>
-                                                          QRViewExample()));
+                                                          QRViewExample(
+                                                            orderNum: deliveryData!
+                                                                .data
+                                                                .trackingNumber,
+                                                            trackingNum: widget
+                                                                .packageNumber,
+                                                          )));
                                             },
                                             child: Row(
                                               mainAxisAlignment:
