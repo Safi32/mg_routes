@@ -28,7 +28,7 @@ class _ProgressIndicatorExampleState extends State<ProgressIndicatorExample> {
         ),
         Container(
           height: 2.5,
-          width: (widget.percentage / 100) * 310,
+          width: (widget.percentage / 100) * 325,
           decoration: BoxDecoration(
             color: Colors.blue,
             borderRadius: BorderRadius.circular(2),
@@ -44,7 +44,7 @@ class _ProgressIndicatorExampleState extends State<ProgressIndicatorExample> {
           ),
         ),
         Positioned(
-          left: size.width - 95,
+          left: size.width - 87,
           child: Container(
             width: 12,
             height: 12,
@@ -55,7 +55,7 @@ class _ProgressIndicatorExampleState extends State<ProgressIndicatorExample> {
           ),
         ),
         Positioned(
-          left: (widget.percentage / 100) * 310,
+          left: (widget.percentage / 100) * 325,
           child: Container(
             width: 12,
             height: 12,

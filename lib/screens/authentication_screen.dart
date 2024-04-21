@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mg_routes/screens/delivery_info.dart';
 import 'package:mg_routes/utils/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
+import 'home_screen.dart';
 
 class AuthenticationScreen extends StatefulWidget {
   const AuthenticationScreen({super.key});
@@ -38,7 +38,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
         // Navigate to the next screen
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => DeliveryInfo()));
+            context, MaterialPageRoute(builder: (context) =>  HomeScreen()));
       }
     } catch (e) {
       // Handle network errors

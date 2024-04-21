@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:mg_routes/api/api.dart';
 import 'package:mg_routes/screens/delivery_info.dart';
 import 'package:mg_routes/utils/colors.dart';
 import 'package:mg_routes/widgets/progress_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../deliveryModel.dart';
+import '../packageModel.dart';
+
+enum ListType {
+  pickup,
+  enroute,
+  delivered,
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +23,64 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _page = 0;
+  List<Package> packagesList = [];
+  ListType listType = ListType.pickup;
+  bool isLoading = false;
+  bool isDataLoading = false;
+  Package? pack;
+  DeliveryResponse? deliveryData;
+
+  @override
+  void initState() {
+    _fetchList("PICKUP");
+    if (packagesList.isNotEmpty) {
+    } else {}
+    super.initState();
+  }
+
+  void getDeliveryData(Package p) async {
+    setState(() {
+      isDataLoading = true;
+    });
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      final response = await ApiService.get(context,
+          "order/${p.orderTrackingNumber}/package/${p.packageTrackingNumber}/details");
+      if (response['success'] == true) {
+        setState(() {
+          deliveryData = DeliveryResponse.fromJson(response);
+          print(deliveryData);
+          isDataLoading = false;
+        });
+        pack = p;
+      }
+    } catch (c) {}
+  }
+
+  Future<void> _fetchList(String type) async {
+    setState(() {
+      isLoading = true;
+      packagesList = [];
+    });
+    try {
+      final response =
+          await ApiService.get(context, "order/driver/packages/$type");
+      print(response.toString());
+      PackageDataList packagesData = PackageDataList.fromJson(response);
+      setState(() {
+        packagesList = packagesData.data;
+      });
+
+      print(packagesData.data);
+    } catch (e) {
+      print(e.toString());
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -69,192 +138,219 @@ class _HomeScreenState extends State<HomeScreen> {
                               decoration: BoxDecoration(
                                   color: Color.fromARGB(255, 47, 47, 47),
                                   borderRadius: BorderRadius.circular(25)),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        "Ready for Pick-up",
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 16),
-                                      ),
-                                      Container(
-                                        height: 30,
-                                        width: 60,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          gradient: reverselinearGradient,
-                                        ),
-                                        child: const Center(
+                              child: isDataLoading
+                                  ? Center(child: CircularProgressIndicator())
+                                  : deliveryData == null
+                                      ? Center(
                                           child: Text(
-                                            "URGENT",
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w900),
-                                          ),
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-                                  const Text(
-                                    "Needles and Gloves",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 16),
-                                  ),
-                                  const Text(
-                                    "GCGKh92129",
-                                    style: TextStyle(
-                                        color: Colors.grey, fontSize: 13),
-                                  ),
-                                  const SizedBox(
-                                    height: 15,
-                                  ),
-                                  const Text(
-                                    "11:30am",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 10),
-                                  ),
-                                  const SizedBox(
-                                    height: 7,
-                                  ),
-                                  // Pass double value only, int will give an error
-                                  ProgressIndicatorExample(50.0),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  const Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Wrap(
-                                        direction: Axis.vertical,
-                                        children: [
-                                          Text(
-                                            "20-Jan-2024",
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 10),
-                                          ),
-                                          Text(
-                                            "Pharmacy",
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11),
-                                          )
-                                        ],
-                                      ),
-                                      Wrap(
-                                        direction: Axis.vertical,
-                                        crossAxisAlignment:
-                                            WrapCrossAlignment.end,
-                                        children: [
-                                          Text(
-                                            "20-Jan-2024",
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 10),
-                                          ),
-                                          Text(
-                                            "Centerville",
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11),
-                                          )
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  Expanded(
-                                    child: Align(
-                                      alignment: Alignment.bottomLeft,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                    builder: ((context) =>
-                                                        DeliveryInfo())),
-                                              );
-                                            },
-                                            child: Text(
-                                              "View Details",
-                                              style:
-                                                  TextStyle(color: Colors.grey),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: 130,
-                                            child: ListTile(
-                                              horizontalTitleGap: 0,
-                                              contentPadding: EdgeInsets.all(0),
-                                              leading: CircleAvatar(
-                                                radius: 14,
-                                                backgroundImage: AssetImage(
-                                                    "assets/Home Icon.png"),
-                                              ),
-                                              title: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Text(
-                                                        "John Doe",
-                                                        style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 16,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold),
-                                                      ),
-                                                      Text(
-                                                        "Pharmacy",
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 10,
-                                                        ),
-                                                      ),
-                                                    ],
+                                              "Press on a package to see it's details",
+                                              style: TextStyle(
+                                                  color: Colors.white)))
+                                      : Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  listType == ListType.pickup
+                                                      ? "Ready for Pick-up"
+                                                      : listType ==
+                                                              ListType.enroute
+                                                          ? "Package is on its way"
+                                                          : "Package Delivered",
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16),
+                                                ),
+                                                Container(
+                                                  height: 30,
+                                                  width: 60,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                    gradient:
+                                                        reverselinearGradient,
                                                   ),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 12.0, left: 4),
-                                                    child: Icon(
-                                                      Icons.verified,
-                                                      size: 12,
-                                                      color: Colors.blue,
+                                                  child: Center(
+                                                    child: Text(
+                                                      deliveryData!
+                                                          .data.urgencyLevel,
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w900),
                                                     ),
                                                   ),
-                                                ],
+                                                )
+                                              ],
+                                            ),
+                                            const SizedBox(
+                                              height: 20,
+                                            ),
+                                            Text(
+                                              deliveryData!.data.name,
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16),
+                                            ),
+                                            Text(
+                                              deliveryData!.data.trackingNumber,
+                                              style: TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 13),
+                                            ),
+                                            const SizedBox(
+                                              height: 15,
+                                            ),
+
+                                            const SizedBox(
+                                              height: 7,
+                                            ),
+                                            // Pass double value only, int will give an error
+
+                                            ProgressIndicatorExample(listType ==
+                                                    ListType.pickup
+                                                ? 0.0
+                                                : listType == ListType.enroute
+                                                    ? 50.0
+                                                    : 100.0),
+                                            const SizedBox(
+                                              height: 10,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  deliveryData!
+                                                      .data
+                                                      .deliveryRouteDTOS[0]
+                                                      .pickupLocation
+                                                      .address,
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11),
+                                                ),
+                                                Text(
+                                                  deliveryData!
+                                                      .data
+                                                      .deliveryRouteDTOS[0]
+                                                      .deliveryLocation
+                                                      .address,
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11),
+                                                ),
+                                              ],
+                                            ),
+                                            Expanded(
+                                              child: Align(
+                                                alignment: Alignment.bottomLeft,
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        Navigator.of(context)
+                                                            .push(
+                                                          MaterialPageRoute(
+                                                              builder:
+                                                                  ((context) =>
+                                                                      DeliveryInfo(
+                                                                        deliveryInfo:
+                                                                            deliveryData!,
+                                                                        packageNumber:
+                                                                            pack!.packageTrackingNumber,
+                                                                      ))),
+                                                        );
+                                                      },
+                                                      child: Text(
+                                                        "View Details",
+                                                        style: TextStyle(
+                                                            color: Colors.grey),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                      width: 130,
+                                                      child: ListTile(
+                                                        horizontalTitleGap: 0,
+                                                        contentPadding:
+                                                            EdgeInsets.all(0),
+                                                        leading: CircleAvatar(
+                                                          radius: 14,
+                                                          backgroundImage:
+                                                              AssetImage(
+                                                                  "assets/Home Icon.png"),
+                                                        ),
+                                                        title: Row(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Text(
+                                                                  "John Doe",
+                                                                  style: TextStyle(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold),
+                                                                ),
+                                                                Text(
+                                                                  "Pharmacy",
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        10,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Padding(
+                                                              padding: EdgeInsets
+                                                                  .only(
+                                                                      top: 12.0,
+                                                                      left: 4),
+                                                              child: Icon(
+                                                                Icons.verified,
+                                                                size: 12,
+                                                                color:
+                                                                    Colors.blue,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    )
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                          ],
+                                        ),
                             ),
                           ]),
                         ),
@@ -337,6 +433,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () {
+                                          _fetchList("PICKUP");
+                                          listType = ListType.pickup;
+                                          deliveryData = null;
                                           setState(() {
                                             _page = 0;
                                           });
@@ -357,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   BorderRadius.circular(25)),
                                           child: Center(
                                               child: Text(
-                                            "Ready",
+                                            "Pickup",
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 color: _page == 0
@@ -368,6 +467,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       GestureDetector(
                                         onTap: () {
+                                          _fetchList("ENROUTE");
+                                          listType = ListType.enroute;
+                                          deliveryData = null;
+
                                           setState(() {
                                             _page = 1;
                                           });
@@ -399,6 +502,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       GestureDetector(
                                         onTap: () {
+                                          _fetchList("DELIVERED");
+                                          listType = ListType.delivered;
+                                          deliveryData = null;
+
                                           setState(() {
                                             _page = 2;
                                           });
@@ -435,47 +542,80 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   Container(
                                     height: 260,
-                                    child: ListView.separated(
-                                      separatorBuilder: (context, index) {
-                                        return Divider(
-                                          color: Colors.black,
-                                        );
-                                      },
-                                      itemBuilder: (context, index) =>
-                                          const ListTile(
-                                        leading: CircleAvatar(
-                                            backgroundColor: Colors.blue,
-                                            radius: 20,
-                                            backgroundImage: AssetImage(
-                                                "assets/Ready for Pickup icon.png")),
-                                        title: Text(
-                                          "GCGKh92129",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12),
-                                        ),
-                                        subtitle: Text(
-                                          "Pharmacy -> Centerville",
-                                          style: TextStyle(fontSize: 8),
-                                        ),
-                                        trailing: SizedBox(
-                                          width: 70,
-                                          child: Row(children: [
-                                            Text(
-                                              "Ready",
-                                              style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            Icon(
-                                              Icons.keyboard_arrow_right,
-                                              size: 34,
-                                            )
-                                          ]),
-                                        ),
-                                      ),
-                                      itemCount: 4,
-                                    ),
+                                    child: isLoading
+                                        ? Center(
+                                            child: CircularProgressIndicator(),
+                                          )
+                                        : packagesList.isEmpty
+                                            ? Center(
+                                                child: Text("No packages!"))
+                                            : ListView.separated(
+                                                separatorBuilder:
+                                                    (context, index) {
+                                                  return Divider(
+                                                    color: Colors.black,
+                                                  );
+                                                },
+                                                itemBuilder: (context, index) {
+                                                  Package package =
+                                                      packagesList[index];
+                                                  return GestureDetector(
+                                                    onTap: () =>
+                                                        getDeliveryData(
+                                                            package),
+                                                    child: ListTile(
+                                                      leading: CircleAvatar(
+                                                          backgroundColor:
+                                                              Colors.blue,
+                                                          radius: 20,
+                                                          backgroundImage:
+                                                              AssetImage(
+                                                                  "assets/Ready for Pickup icon.png")),
+                                                      title: Text(
+                                                        package
+                                                            .orderTrackingNumber
+                                                            .toString(),
+                                                        style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 12),
+                                                      ),
+                                                      subtitle: Text(
+                                                        "${package.pickupAddress} -> ${package.deliveryAddress}",
+                                                        style: TextStyle(
+                                                            fontSize: 8),
+                                                      ),
+                                                      trailing: SizedBox(
+                                                        width: 70,
+                                                        child: Row(children: [
+                                                          Text(
+                                                            listType ==
+                                                                    ListType
+                                                                        .pickup
+                                                                ? "Ready"
+                                                                : listType ==
+                                                                        ListType
+                                                                            .enroute
+                                                                    ? "Enroute"
+                                                                    : "Delivered",
+                                                            style: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          ),
+                                                          Icon(
+                                                            Icons
+                                                                .keyboard_arrow_right,
+                                                            size: 34,
+                                                          )
+                                                        ]),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                itemCount: 4,
+                                              ),
                                   )
                                 ],
                               ),

@@ -2,8 +2,9 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:mg_routes/api/api.dart';
+import 'package:mg_routes/mediaTypeDTO.dart';
 import 'package:mg_routes/screens/qr_code_screen.dart';
 import 'package:mg_routes/screens/signature_screen.dart';
 import 'package:mg_routes/utils/colors.dart';
@@ -13,7 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../deliveryModel.dart';
 
 class DeliveryInfo extends StatefulWidget {
-  const DeliveryInfo({super.key});
+  const DeliveryInfo(
+      {super.key, required this.deliveryInfo, required this.packageNumber});
+  final DeliveryResponse deliveryInfo;
+  final packageNumber;
 
   @override
   State<DeliveryInfo> createState() => _DeliveryInfoState();
@@ -47,20 +51,77 @@ class _DeliveryInfoState extends State<DeliveryInfo> {
   }
 
   void getDeliveryData() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      final response = await ApiService.get(context, "users/signin");
-      if (response['success'] == true) {
-        setState(() {
-          deliveryData = DeliveryResponse.fromJson(response);
-          print(deliveryData);
-          isLoading = false;
-          driver = prefs.getString("driver");
-        });
-      }
-    } catch (c) {}
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    deliveryData = widget.deliveryInfo;
+    driver = prefs.getString("driver");
+    setState(() {
+      isLoading = false;
+    });
   }
+
+  void uploadImages() async {
+    for (var imageFile in _images) {
+      try {
+        // Create a multipart request
+        var request = http.MultipartRequest(
+            'POST',
+            Uri.parse(
+              "https://api.mgroutes.com/api/order/${deliveryData!.data.trackingNumber}/package/${widget.packageNumber}/upload",
+            ));
+
+        // Create a multipart file from the image file
+        var multipartFile = await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+        );
+
+        // Add the multipart file to the request
+        request.files.add(multipartFile);
+
+        // Add other parameters as needed
+        request.fields['imageUrl'] = '';
+        request.fields['mediaTypeEnum'] =
+            MediaTypeEnum.PACKAGE_IMAGE.toString();
+        request.fields['orderTrackingNumber'] =
+            deliveryData!.data.trackingNumber;
+        request.fields['packageTrackingNumber'] = widget.packageNumber;
+
+        // Send the request
+        var streamedResponse = await request.send();
+
+        // Get the response
+        var response = await http.Response.fromStream(streamedResponse);
+
+        // Check the response status
+        if (response.statusCode == 200) {
+          print('Image uploaded successfully');
+        } else {
+          print('Error uploading image: ${response.reasonPhrase}');
+        }
+      } catch (e) {
+        print('Error uploading image: $e');
+      }
+    }
+  }
+
+  // void uploadImages() async {
+  //   for (var image in _images) {
+  //     try {
+  //       MediaRequestDTO media = MediaRequestDTO(
+  //           imageUrl: "",
+  //           mediaTypeEnum: MediaTypeEnum.PACKAGE_IMAGE,
+  //           orderTrackingNumber: deliveryData!.data.trackingNumber,
+  //           packageTrackingNumber: widget.packageNumber);
+  //       final response = await ApiService.post(
+  //           context,
+  //           "order/${deliveryData!.data.trackingNumber}/package/${widget.packageNumber}/upload",
+  //           media.toJson());
+  //       print(response.toString());
+  //     } catch (e) {
+  //       print(e.toString());
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -407,6 +468,16 @@ class _DeliveryInfoState extends State<DeliveryInfo> {
                                             ),
                                           ),
                                         ),
+                                        SizedBox(
+                                          height: 10,
+                                        ),
+                                        ElevatedButton(
+                                            onPressed: () {
+                                              if (_images.isNotEmpty) {
+                                                uploadImages();
+                                              }
+                                            },
+                                            child: Text("Upload images")),
                                         SizedBox(
                                           height: 10,
                                         ),

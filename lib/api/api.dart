@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../configs/configs.dart';
 
 class ApiService {
@@ -39,8 +41,7 @@ class ApiService {
     BuildContext context,
     String uri,
   ) async {
-    final url = Uri.parse(
-        'http://mgroutes-app-env.eba-dipnppi2.us-east-1.elasticbeanstalk.com/api/order/72707787319194/package/64093558505316/details');
+    final url = Uri.parse('${Configs.baseUrl}$uri');
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     try {
